@@ -11,7 +11,8 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /* Begin options */
 const ADDRESS:&str = "0.0.0.0:80";
-const DIRECTORY:&str = "/var/www/html"; const NOTFOUNDPAGE:&str = "/var/www/404.html";
+const DIRECTORY:&str = "/var/www/html";
+const NOTFOUNDPAGE:&str = "/var/www/404.html";
 const ALLOWSYM:bool = false;
 const MULTIPLEHOSTS:bool = false;
 const MAXREQUESTSIZE:usize = 2048;

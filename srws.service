@@ -1,0 +1,11 @@
+[Unit]
+Description=srws Daemon
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/bin/srws
+ExecReload=/bin/pkill srws
+ExecRestart=/bin/pkill srws
+ExecStop=/bin/pkill srws
+Restart=on-failure
