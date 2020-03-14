@@ -1,6 +1,7 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::prelude::*;
 use std::process::exit;
+use std::path::Path;
 use std::fs::File;
 use std::thread;
 use std::str;
@@ -10,8 +11,7 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /* Begin options */
 const ADDRESS:&str = "0.0.0.0:80";
-const DIRECTORY:&str = "/var/www/html";
-const NOTFOUNDPAGE:&str = "/var/www/404.html";
+const DIRECTORY:&str = "/var/www/html"; const NOTFOUNDPAGE:&str = "/var/www/404.html";
 const ALLOWSYM:bool = false;
 const MULTIPLEHOSTS:bool = false;
 const MAXREQUESTSIZE:usize = 2048;
@@ -73,7 +73,18 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
         return Ok(())
     }
 
-    send_page(stream, &filepath, "200 OK");
+    let extension = Path::new(&filepath).extension();
+
+    if extension == None {
+        send_page(stream, &filepath, "200 OK", "text/html");
+        return Ok(())
+    }
+
+    match extension.unwrap().to_str().unwrap() {
+        "jpg" | "png" => send_page(stream, &filepath, "200 OK", "image"),
+        _ => send_page(stream, &filepath, "200 OK", "text/html"),
+    }
+    
 
     return Ok(())
 }
@@ -83,11 +94,11 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
 /// and the contents of the file located at the filepath
 /// as a html body. This function does not sanitize input.
 fn
-send_page (mut stream: TcpStream, filepath: &str, status: &str) {
+send_page (mut stream: TcpStream, filepath: &str, status: &str, contenttype: &str) {
     let mut fptr = File::open(filepath).unwrap();
     let mut file = Vec::new();
     fptr.read_to_end(&mut file).unwrap();
-    let header = format!("HTTP/1.1 {}\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", status, file.len());
+    let header = format!("HTTP/1.1 {}\nContent-Type: {} charset=utf-8\nContent-Length: {}\n\n", status, contenttype, file.len());
     let mut response = Vec::from(header.into_bytes().as_slice());
     response.append(&mut file);
     stream.write(&response).unwrap();
@@ -96,7 +107,7 @@ send_page (mut stream: TcpStream, filepath: &str, status: &str) {
 /// Sends a 404 response to the given TcpStream.
 fn
 send_404 (stream: TcpStream) {
-    send_page(stream, NOTFOUNDPAGE, "404 Not Found");
+    send_page(stream, NOTFOUNDPAGE, "404 Not Found", "text/html");
 }
 
 fn
