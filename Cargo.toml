@@ -3,6 +3,8 @@ name = "srws"
 version = "0.1.0"
 authors = ["depsterr <depsterr@protonmail.com>"]
 edition = "2018"
+license-file = "LICENSE"
+license = "wtfpl"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
