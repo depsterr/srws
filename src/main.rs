@@ -11,7 +11,7 @@ const ADDRESS:&str = "127.0.0.1:80";
 const DIRECTORY:&str = "/var/www/html";
 const NOTFOUNDPAGE:&str = "/var/www/404.html";
 const ALLOWSYM:bool = false;
-const MULTIPLEHOSTS:bool = true;
+const MULTIPLEHOSTS:bool = false;
 /* End Options */
 
 /// This function takes a TcpStream as an argument which it then reads a
@@ -39,6 +39,7 @@ let data_string = match str::from_utf8(&data) {
         filepath.push_str("/");
         filepath.push_str(data_splits[4]);
     }
+    filepath.push_str(data_splits[1]);
 
     /* TODO SANITIZE FILEPATH HERE */
 
