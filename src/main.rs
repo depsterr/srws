@@ -15,7 +15,6 @@ const DIRECTORY:&str = "/var/www/html";
 const NOTFOUNDPAGE:&str = "/var/www/404.html";
 const ALLOWSYM:bool = false; /* Potentially dangerous */
 const MULTIPLEHOSTS:bool = false;
-const MAXREQUESTSIZE:usize = 2048;
 /* End Options */
 
 /// This function takes a TcpStream as an argument which it then reads a
@@ -25,7 +24,7 @@ fn
 handle_client (mut stream: TcpStream) -> Result<(), ()> {
     println!("======= Begin Request =======\n");
 
-    let mut data = [0; MAXREQUESTSIZE];
+    let mut data:Vec<u8> = Vec::new();
     
     match stream.read(&mut data) {
         Ok(v) => v,
