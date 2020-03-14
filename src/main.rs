@@ -42,6 +42,10 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
 
     let data_splits: Vec<&str> = data_string.split_whitespace().collect();
 
+    if data_splits.len() < 5 {
+        return Err(());
+    }
+
     let mut filepath = String::from(DIRECTORY);
     if MULTIPLEHOSTS {
         filepath.push('/');
