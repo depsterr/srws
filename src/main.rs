@@ -2,16 +2,17 @@ use std::net::{TcpListener, TcpStream};
 use std::io::prelude::*;
 use std::process::exit;
 use std::str;
-use std::env;
 use std::fs;
 
-const VERSION:&str = "0.1.0";
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+/* Begin options */
 const ADDRESS:&str = "127.0.0.1:80";
 const DIRECTORY:&str = "/var/www/html";
 const NOTFOUNDPAGE:&str = "/var/www/404.html";
 const ALLOWSYM:bool = false;
 const MULTIPLEHOSTS:bool = true;
+/* End Options */
 
 /// This function takes a TcpStream as an argument which it then reads a
 /// HTTP response from to which it will either reply with 404 or 200
@@ -84,10 +85,10 @@ send404 (mut stream: TcpStream) {
     let error_page:String = fs::read_to_string(NOTFOUNDPAGE).unwrap().parse().unwrap();
     let mut response = format!("HTTP/1.1 404 Not Found\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", error_page.len());
     response.push_str(&error_page);
-    stream.write(response.into_bytes().as_slice()).unwrap();
     println!("======= Begin Respone =======\n");
     print!("{}", response);
     println!("\n======= End Respone =======");
+    stream.write(response.into_bytes().as_slice()).unwrap();
 }
 
 /// Sends the contents of the given file as well as a http 200
@@ -97,22 +98,20 @@ sendpage (mut stream: TcpStream, filepath: String) {
     let page:String = fs::read_to_string(filepath).unwrap().parse().unwrap();
     let mut response = format!("HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", page.len());
     response.push_str(&page);
-    stream.write(response.into_bytes().as_slice()).unwrap();
     println!("======= Begin Respone =======\n");
     print!("{}", response);
     println!("\n======= End Respone =======");
+    stream.write(response.into_bytes().as_slice()).unwrap();
 }
 
 fn
 main() {
-    let args: Vec<String> = env::args().collect();
-
     println!("Starting srws version {}", VERSION);
 
     let listener = match TcpListener::bind(ADDRESS) {
         Ok(v) => v,
         Err(_e) => {
-            println!("Unable to start listening on '{}' did you run as root?", ADDRESS);
+            println!("Unable to start listening on '{}', do you have the needed permissions?", ADDRESS);
             exit(1);
         }
     };
