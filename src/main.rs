@@ -13,18 +13,24 @@ const DIRECTORY:&str = "/var/www/html";
 const NOTFOUNDPAGE:&str = "/var/www/404.html";
 const ALLOWSYM:bool = false;
 const MULTIPLEHOSTS:bool = false;
+const MAXREQUESTSIZE:usize = 2048;
 /* End Options */
 
 /// This function takes a TcpStream as an argument which it then reads a
-/// HTTP response from to which it will either reply with 404 or 200
-/// followed by a 404 page or the correct page.
+/// HTTP request from to which it will either reply with a 404 or 200
+/// response and a corresponding html page.
 fn
 handle_client (mut stream: TcpStream) -> Result<(), ()> {
     println!("======= Begin Request =======\n");
 
-    let mut data = [0; 2048];
-    stream.read(&mut data).unwrap();
-let data_string = match str::from_utf8(&data) {
+    let mut data = [0; MAXREQUESTSIZE];
+    
+    match stream.read(&mut data) {
+        Ok(v) => v,
+        Err(_e) => return Err(()),
+    };
+
+    let data_string = match str::from_utf8(&data) {
         Ok(v) => v,
         Err(_e) => return Err(())
     };
@@ -41,8 +47,6 @@ let data_string = match str::from_utf8(&data) {
         filepath.push_str(data_splits[4]);
     }
     filepath.push_str(data_splits[1]);
-
-    /* TODO SANITIZE FILEPATH HERE */
 
     let mut metadata = match fs::metadata(filepath.clone()) {
         Ok(v) => v,
@@ -68,17 +72,19 @@ let data_string = match str::from_utf8(&data) {
         return Ok(())
     }
 
-    send_page(stream, &filepath);
+    send_page(stream, &filepath, "200 OK");
 
     return Ok(())
 }
 
-/// Sends the contents of the given file as well as a http 200
-/// header to the given stream.
+/// Takes a TcpStream, a filepath and a status, it then sends
+/// a HTTP response to the stream with status as the status
+/// and the contents of the file located at the filepath
+/// as a html body. This function does not sanitize input.
 fn
-send_page (mut stream: TcpStream, filepath: &str) {
+send_page (mut stream: TcpStream, filepath: &str, status: &str) {
     let page:String = fs::read_to_string(filepath).unwrap().parse().unwrap();
-    let mut response = format!("HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", page.len());
+    let mut response = format!("HTTP/1.1 {}\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", status, page.len());
     response.push_str(&page);
     println!("======= Begin Respone =======\n");
     print!("{}", response);
@@ -86,11 +92,10 @@ send_page (mut stream: TcpStream, filepath: &str) {
     stream.write(response.into_bytes().as_slice()).unwrap();
 }
 
-/// Sends the contents of the 404 page as well as a 404
-/// header to the given stream.
+/// Sends a 404 response to the given TcpStream.
 fn
 send_404 (stream: TcpStream) {
-    send_page(stream, NOTFOUNDPAGE);
+    send_page(stream, NOTFOUNDPAGE, "404 Not Found");
 }
 
 fn
