@@ -18,7 +18,7 @@ const MULTIPLEHOSTS:bool = true;
 /// followed by a 404 page or the correct page.
 fn
 handle_client (mut stream: TcpStream) -> Result<(), ()> {
-    println!("======= New request =======\n");
+    println!("======= Begin Request =======\n");
 
     let mut data = [0; 2048];
     stream.read(&mut data).unwrap();
@@ -29,7 +29,7 @@ let data_string = match str::from_utf8(&data) {
 
     print!("{}", data_string);
 
-    println!("\n======= End of request =======\n");
+    println!("\n======= End Request =======");
 
     let data_splits: Vec<&str> = data_string.split_whitespace().collect();
 
@@ -38,8 +38,6 @@ let data_string = match str::from_utf8(&data) {
         filepath.push_str("/");
         filepath.push_str(data_splits[4]);
     }
-
-    println!("{}", filepath);
 
     /* TODO SANITIZE FILEPATH HERE */
 
@@ -87,6 +85,9 @@ send404 (mut stream: TcpStream) {
     let mut response = format!("HTTP/1.1 404 Not Found\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", error_page.len());
     response.push_str(&error_page);
     stream.write(response.into_bytes().as_slice()).unwrap();
+    println!("======= Begin Respone =======\n");
+    print!("{}", response);
+    println!("\n======= End Respone =======");
 }
 
 /// Sends the contents of the given file as well as a http 200
@@ -97,6 +98,9 @@ sendpage (mut stream: TcpStream, filepath: String) {
     let mut response = format!("HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", page.len());
     response.push_str(&page);
     stream.write(response.into_bytes().as_slice()).unwrap();
+    println!("======= Begin Respone =======\n");
+    print!("{}", response);
+    println!("\n======= End Respone =======");
 }
 
 fn
