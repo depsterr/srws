@@ -9,3 +9,6 @@ ExecReload=/bin/pkill srws
 ExecRestart=/bin/pkill srws
 ExecStop=/bin/pkill srws
 Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
