@@ -1,6 +1,7 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::prelude::*;
 use std::process::exit;
+use std::fs::File;
 use std::thread;
 use std::str;
 use std::fs;
@@ -8,7 +9,7 @@ use std::fs;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /* Begin options */
-const ADDRESS:&str = "127.0.0.1:80";
+const ADDRESS:&str = "0.0.0.0:80";
 const DIRECTORY:&str = "/var/www/html";
 const NOTFOUNDPAGE:&str = "/var/www/404.html";
 const ALLOWSYM:bool = false;
@@ -43,7 +44,7 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
 
     let mut filepath = String::from(DIRECTORY);
     if MULTIPLEHOSTS {
-        filepath.push_str("/");
+        filepath.push('/');
         filepath.push_str(data_splits[4]);
     }
     filepath.push_str(data_splits[1]);
@@ -83,13 +84,13 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
 /// as a html body. This function does not sanitize input.
 fn
 send_page (mut stream: TcpStream, filepath: &str, status: &str) {
-    let page:String = fs::read_to_string(filepath).unwrap().parse().unwrap();
-    let mut response = format!("HTTP/1.1 {}\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", status, page.len());
-    response.push_str(&page);
-    println!("======= Begin Respone =======\n");
-    print!("{}", response);
-    println!("\n======= End Respone =======");
-    stream.write(response.into_bytes().as_slice()).unwrap();
+    let mut fptr = File::open(filepath).unwrap();
+    let mut file = Vec::new();
+    fptr.read_to_end(&mut file).unwrap();
+    let header = format!("HTTP/1.1 {}\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", status, file.len());
+    let mut response = Vec::from(header.into_bytes().as_slice());
+    response.append(&mut file);
+    stream.write(&response).unwrap();
 }
 
 /// Sends a 404 response to the given TcpStream.
