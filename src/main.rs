@@ -1,6 +1,7 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::prelude::*;
 use std::process::exit;
+use std::thread;
 use std::str;
 use std::fs;
 
@@ -46,7 +47,7 @@ let data_string = match str::from_utf8(&data) {
     let mut metadata = match fs::metadata(filepath.clone()) {
         Ok(v) => v,
         Err(_e) => {
-            send404(stream);
+            send_404(stream);
             return Ok(())
         },
     };
@@ -56,46 +57,26 @@ let data_string = match str::from_utf8(&data) {
         metadata = match fs::metadata(filepath.clone()) {
             Ok(v) => v,
             Err(_e) => {
-                send404(stream);
+                send_404(stream);
                 return Ok(())
             },
         };
     }
 
     if metadata.file_type().is_symlink() && !ALLOWSYM {
-        send404(stream);
+        send_404(stream);
         return Ok(())
     }
 
-    sendpage(stream, filepath);
+    send_page(stream, &filepath);
 
     return Ok(())
-}
-
-/// Sends the contents of the 404 page as well as a 404
-/// header to the given stream.
-fn
-send404 (mut stream: TcpStream) {
-    match fs::metadata(NOTFOUNDPAGE) {
-        Ok(v) => v,
-        Err(_e) => {
-            println!("ERROR: missing 404 page at: \"{}\", please create this file!", NOTFOUNDPAGE);
-            return;
-        },
-    };
-    let error_page:String = fs::read_to_string(NOTFOUNDPAGE).unwrap().parse().unwrap();
-    let mut response = format!("HTTP/1.1 404 Not Found\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", error_page.len());
-    response.push_str(&error_page);
-    println!("======= Begin Respone =======\n");
-    print!("{}", response);
-    println!("\n======= End Respone =======");
-    stream.write(response.into_bytes().as_slice()).unwrap();
 }
 
 /// Sends the contents of the given file as well as a http 200
 /// header to the given stream.
 fn
-sendpage (mut stream: TcpStream, filepath: String) {
+send_page (mut stream: TcpStream, filepath: &str) {
     let page:String = fs::read_to_string(filepath).unwrap().parse().unwrap();
     let mut response = format!("HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nContent-Length: {}\n\n", page.len());
     response.push_str(&page);
@@ -103,6 +84,13 @@ sendpage (mut stream: TcpStream, filepath: String) {
     print!("{}", response);
     println!("\n======= End Respone =======");
     stream.write(response.into_bytes().as_slice()).unwrap();
+}
+
+/// Sends the contents of the 404 page as well as a 404
+/// header to the given stream.
+fn
+send_404 (stream: TcpStream) {
+    send_page(stream, NOTFOUNDPAGE);
 }
 
 fn
@@ -122,9 +110,6 @@ main() {
             Ok(v) => v,
             Err(_e) => continue,
         };
-        match handle_client(stream) {
-            Ok(v) => v,
-            Err(_e) => continue,
-        }
+        thread::spawn( || handle_client(stream));
     }
 }
