@@ -9,13 +9,22 @@ use std::fs;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-/* Begin options */
+/// The address that the server will listen on. The default value covers
+/// all connections on port 80
 const ADDRESS:&str = "0.0.0.0:80";
+/// The base directory for the webpage.
 const DIRECTORY:&str = "/var/www/html";
+/// The page to show in case of a 404 Not Found error
 const NOTFOUNDPAGE:&str = "/var/www/404.html";
-const ALLOWSYM:bool = false; /* Potentially dangerous */
+/// Allow opening symlinks? (Note that symlink paths are not blocked by
+/// this option.
+const ALLOWSYM:bool = false;
+/// If set to true, the server will serve webpages from a subdirectory
+/// with the name of the host. For example, if you were to connect to
+/// examplewebsite.com then the server would use the folder
+/// /var/www/html/examplewebsite.com/ as it's base directory. This is
+/// useful if you want to host multiple website on one server.
 const MULTIPLEHOSTS:bool = false;
-/* End Options */
 
 /// This function takes a TcpStream as an argument which it then reads a
 /// HTTP request from to which it will either reply with a 404 or 200

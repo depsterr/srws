@@ -6,30 +6,22 @@ I've tried to make the server somewhat safe, however I cannot guarantee it's saf
 
 # Options / Configuration
 
-```rust
-/* Begin options */
-const ADDRESS:&str = "0.0.0.0:80";
-const DIRECTORY:&str = "/var/www/html";
-const NOTFOUNDPAGE:&str = "/var/www/404.html";
-const ALLOWSYM:bool = false; /* Potentially dangerous */
-const MULTIPLEHOSTS:bool = false;
-/* End Options */
-```
+The following constants are present in [src/main.rs](https://github.com/depsterr/srws/blob/master/src/main.rs).
 
-* Address
-	* This is the adress the server will listen on, use the default value if you simply want to listen for all connections on port 80.
+* ADDRESS
+	* The address that the server will listen on. The default value covers all connections on port 80
 
-* Directory
-	* The base directory for the website.
+* ALLOWSYM
+	* Allow opening symlinks? (Note that symlink paths are not blocked by this option.
 
-* Not found page
-	* The page to display in case of a 404 error.
+* DIRECTORY
+	* The base directory for the webpage.
 
-* Allow symlinks
-	* Allow opening symlinks, note that it will follow symlink directories without this, it simply prevents opening symlinks directly.
+* MULTIPLEHOSTS
+	* If set to true, the server will serve webpages from a subdirectory with the name of the host. For example, if you were to connect to examplewebsite.com then the server would use the folder /var/www/html/examplewebsite.com/ as it's base directory. This is useful if you want to host multiple website on one server.
 
-* Multiple hosts
-	* Use directory `<address option>/<full domain name>` as base for files. This is usefull if you're hosting multiple websites on one server.
+* NOTFOUNDPAGE
+	* The page to show in case of a 404 Not Found error
 
 # Installation
 
