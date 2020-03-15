@@ -29,7 +29,7 @@ const MULTIPLEHOSTS:bool = false;
 	* Allow opening symlinks, note that it will follow symlink directories without this, it simply prevents opening symlinks directly.
 
 * Multiple hosts
-	* Use directory `<address option>/<full domain name>` as base for files. This is usefull if you're hosting multiple websites on one server.
+	* Use directory `<address option>/<full domain name>` as base directory for files. This is usefull if you're hosting multiple websites on one server.
 
 # Installation
 
