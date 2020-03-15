@@ -17,6 +17,9 @@ The following constants are present in [src/main.rs](https://github.com/depsterr
 * DIRECTORY
 	* The base directory for the webpage.
 
+* MAXREQUESTSIZE
+	* The max amount of bytes to be able to read as a http request.
+
 * MULTIPLEHOSTS
 	* If set to true, the server will serve webpages from a subdirectory with the name of the host. For example, if you were to connect to examplewebsite.com then the server would use the folder /var/www/html/examplewebsite.com/ as it's base directory. This is useful if you want to host multiple website on one server.
 

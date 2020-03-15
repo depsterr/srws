@@ -25,6 +25,8 @@ const ALLOWSYM:bool = false;
 /// /var/www/html/examplewebsite.com/ as it's base directory. This is
 /// useful if you want to host multiple website on one server.
 const MULTIPLEHOSTS:bool = false;
+/// The max amount of bytes to be able to read as a http request.
+const MAXREQUESTSIZE:usize = 4096;
 
 /// This function takes a TcpStream as an argument which it then reads a
 /// HTTP request from to which it will either reply with a 404 or 200
@@ -33,7 +35,7 @@ fn
 handle_client (mut stream: TcpStream) -> Result<(), ()> {
     println!("======= Begin Request =======\n");
 
-    let mut data:Vec<u8> = Vec::new();
+    let mut data = [0; MAXREQUESTSIZE];
     
     match stream.read(&mut data) {
         Ok(v) => v,
