@@ -91,7 +91,7 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
     let extension = Path::new(&filepath).extension();
 
     if extension == None {
-        send_page(stream, &filepath, "200 OK", "text/html");
+        send_page(stream, &filepath, "200 OK", "text");
         return Ok(())
     }
 
@@ -105,7 +105,7 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
         "json" => send_page(stream, &filepath, "200 OK", "application/json"),
         "mp3" => send_page(stream, &filepath, "200 OK", "audio/mpeg"),
         "svg" => send_page(stream, &filepath, "200 OK", "image/svg+xml"),
-        _ => send_page(stream, &filepath, "200 OK", "text/html"),
+        _ => send_page(stream, &filepath, "200 OK", "text/html; charset=utf-8"),
     }
     
 
@@ -121,7 +121,7 @@ send_page (mut stream: TcpStream, filepath: &str, status: &str, contenttype: &st
     let mut fptr = File::open(filepath).unwrap();
     let mut file = Vec::new();
     fptr.read_to_end(&mut file).unwrap();
-    let header = format!("HTTP/1.1 {}\nContent-Type: {} charset=utf-8\nContent-Length: {}\n\n", status, contenttype, file.len());
+    let header = format!("HTTP/1.1 {}\nContent-Type: {}\nX-Content-Type-Options: nosniff\nContent-Length: {}\n\n", status, contenttype, file.len());
     let mut response = Vec::from(header.into_bytes().as_slice());
     response.append(&mut file);
     stream.write(&response).unwrap();
