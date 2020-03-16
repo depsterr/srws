@@ -7,24 +7,30 @@ use std::thread;
 use std::str;
 use std::fs;
 
+/// The program version
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// The address that the server will listen on. The default value covers
 /// all connections on port 80
 const ADDRESS:&str = "0.0.0.0:80";
+
 /// The base directory for the webpage.
 const DIRECTORY:&str = "/var/www/html";
+
 /// The page to show in case of a 404 Not Found error
 const NOTFOUNDPAGE:&str = "/var/www/404.html";
+
 /// Allow opening symlinks? (Note that symlink paths are not blocked by
 /// this option.
 const ALLOWSYM:bool = false;
+
 /// If set to true, the server will serve webpages from a subdirectory
 /// with the name of the host. For example, if you were to connect to
 /// examplewebsite.com then the server would use the folder
 /// /var/www/html/examplewebsite.com/ as it's base directory. This is
 /// useful if you want to host multiple website on one server.
 const MULTIPLEHOSTS:bool = false;
+
 /// The max amount of bytes to be able to read as a http request.
 const MAXREQUESTSIZE:usize = 4096;
 
@@ -96,15 +102,17 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
     }
 
     match extension.unwrap().to_str().unwrap() {
+        "html" => send_page(stream, &filepath, "200 OK", "text/html; charset=utf-8"),
         "jpg" | "jpeg" => send_page(stream, &filepath, "200 OK", "image/jpeg"),
         "png" => send_page(stream, &filepath, "200 OK", "image/png"),
-        "bmp" => send_page(stream, &filepath, "200 OK", "image/bmp"),
-        "ico" => send_page(stream, &filepath, "200 OK", "image/vnd.microsoft.icon"),
         "css" => send_page(stream, &filepath, "200 OK", "text/css"),
         "js" => send_page(stream, &filepath, "200 OK", "text/javascript"),
         "json" => send_page(stream, &filepath, "200 OK", "application/json"),
         "mp3" => send_page(stream, &filepath, "200 OK", "audio/mpeg"),
         "svg" => send_page(stream, &filepath, "200 OK", "image/svg+xml"),
+        "ico" => send_page(stream, &filepath, "200 OK", "image/vnd.microsoft.icon"),
+        "bmp" => send_page(stream, &filepath, "200 OK", "image/bmp"),
+        "gif" => send_page(stream, &filepath, "200 OK", "audio/gif"),
         _ => send_page(stream, &filepath, "200 OK", "text/html; charset=utf-8"),
     }
     
