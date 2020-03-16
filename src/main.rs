@@ -96,8 +96,15 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
     }
 
     match extension.unwrap().to_str().unwrap() {
-        "jpg" | "jpeg" | "png" => send_page(stream, &filepath, "200 OK", "image"),
+        "jpg" | "jpeg" => send_page(stream, &filepath, "200 OK", "image/jpeg"),
+        "png" => send_page(stream, &filepath, "200 OK", "image/png"),
+        "bmp" => send_page(stream, &filepath, "200 OK", "image/bmp"),
+        "ico" => send_page(stream, &filepath, "200 OK", "image/vnd.microsoft.icon"),
         "css" => send_page(stream, &filepath, "200 OK", "text/css"),
+        "js" => send_page(stream, &filepath, "200 OK", "text/javascript"),
+        "json" => send_page(stream, &filepath, "200 OK", "application/json"),
+        "mp3" => send_page(stream, &filepath, "200 OK", "audio/mpeg"),
+        "svg" => send_page(stream, &filepath, "200 OK", "image/svg+xml"),
         _ => send_page(stream, &filepath, "200 OK", "text/html"),
     }
     
