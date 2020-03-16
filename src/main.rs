@@ -96,7 +96,8 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
     }
 
     match extension.unwrap().to_str().unwrap() {
-        "jpg" | "png" => send_page(stream, &filepath, "200 OK", "image"),
+        "jpg" | "jpeg" | "png" => send_page(stream, &filepath, "200 OK", "image"),
+        "css" => send_page(stream, &filepath, "200 OK", "text/css"),
         _ => send_page(stream, &filepath, "200 OK", "text/html"),
     }
     
