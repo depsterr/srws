@@ -19,12 +19,6 @@ struct Options {
     multiple_hosts: bool,
 }
 
-impl Clone for Options {
-    fn clone(&self) -> Options {
-        Options { address: self.address.clone(), directory: self.directory.clone(), not_found_page: self.not_found_page.clone(), allow_sym: self.allow_sym.clone(), multiple_hosts: self.multiple_hosts.clone(), }
-    }
-}
-
 /// The program version
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
