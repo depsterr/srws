@@ -1,14 +1,33 @@
 use std::net::{TcpListener, TcpStream};
+use readconfig::Configuration;
 use std::io::prelude::*;
 use std::process::exit;
+use std::str::FromStr;
 use std::path::Path;
 use std::fs::File;
 use std::thread;
 use std::str;
 use std::fs;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+struct Options {
+    address: String,
+    directory: String,
+    not_found_page: String,
+    allow_sym: bool,
+    multiple_hosts: bool,
+}
 
+impl Clone for Options {
+    fn clone(&self) -> Options {
+        Options { address: self.address.clone(), directory: self.directory.clone(), not_found_page: self.not_found_page.clone(), allow_sym: self.allow_sym.clone(), multiple_hosts: self.multiple_hosts.clone(), }
+    }
+}
+
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const MAX_REQUEST_SIZE:usize = 4096;
+
+/*
 /// The address that the server will listen on. The default value covers
 /// all connections on port 80
 const ADDRESS:&str = "0.0.0.0:80";
@@ -27,15 +46,16 @@ const ALLOWSYM:bool = false;
 const MULTIPLEHOSTS:bool = false;
 /// The max amount of bytes to be able to read as a http request.
 const MAXREQUESTSIZE:usize = 4096;
+*/
 
 /// This function takes a TcpStream as an argument which it then reads a
 /// HTTP request from to which it will either reply with a 404 or 200
 /// response and a corresponding html page.
 fn
-handle_client (mut stream: TcpStream) -> Result<(), ()> {
+handle_client (mut stream: TcpStream, options: Options) -> Result<(), ()> {
     println!("======= Begin Request =======\n");
 
-    let mut data = [0; MAXREQUESTSIZE];
+    let mut data = [0; MAX_REQUEST_SIZE];
     
     match stream.read(&mut data) {
         Ok(v) => v,
@@ -57,8 +77,8 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
         return Err(());
     }
 
-    let mut filepath = String::from(DIRECTORY);
-    if MULTIPLEHOSTS {
+    let mut filepath = String::from(options.directory);
+    if options.multiple_hosts {
         filepath.push('/');
         filepath.push_str(data_splits[4]);
     }
@@ -67,7 +87,7 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
     let mut metadata = match fs::metadata(filepath.clone()) {
         Ok(v) => v,
         Err(_e) => {
-            send_404(stream);
+            send_page(stream, &options.not_found_page, "404 Not Found", "text/html");
             return Ok(())
         },
     };
@@ -77,14 +97,14 @@ handle_client (mut stream: TcpStream) -> Result<(), ()> {
         metadata = match fs::metadata(filepath.clone()) {
             Ok(v) => v,
             Err(_e) => {
-                send_404(stream);
+                send_page(stream, &options.not_found_page, "404 Not Found", "text/html");
                 return Ok(())
             },
         };
     }
 
-    if metadata.file_type().is_symlink() && !ALLOWSYM {
-        send_404(stream);
+    if metadata.file_type().is_symlink() && !options.allow_sym {
+        send_page(stream, &options.not_found_page, "404 Not Found", "text/html");
         return Ok(())
     }
 
@@ -119,20 +139,39 @@ send_page (mut stream: TcpStream, filepath: &str, status: &str, contenttype: &st
     stream.write(&response).unwrap();
 }
 
-/// Sends a 404 response to the given TcpStream.
-fn
-send_404 (stream: TcpStream) {
-    send_page(stream, NOTFOUNDPAGE, "404 Not Found", "text/html");
-}
-
 fn
 main() {
     println!("Starting srws version {}", VERSION);
 
-    let listener = match TcpListener::bind(ADDRESS) {
+    let cfg = Configuration::new(&["/etc/srws.conf"]);
+
+    let options = Options {
+        address: match cfg.get_option("adress") {
+            Ok(v) => v,
+            Err(_e) => "0.0.0.0:80".to_string(),
+        },
+        directory: match cfg.get_option("directory") {
+            Ok(v) => v,
+            Err(_e) => "/var/www/html".to_string(),
+        },
+        not_found_page: match cfg.get_option("not_found_page") {
+            Ok(v) => v,
+            Err(_e) => "/var/www/404.html".to_string(),
+        },
+        allow_sym: match bool::from_str(match cfg.get_option("allow_sym") { Ok(v) => &v, Err(e) => "false"}) {
+            Ok(v) => v,
+            Err(_e) => false,
+        },
+        multiple_hosts: match bool::from_str(match cfg.get_option("multiple_hosts") { Ok(v) => &v, Err(e) => "false"}) {
+            Ok(v) => v,
+            Err(_e) => false,
+        },
+    };
+
+    let listener = match TcpListener::bind(&options.address) {
         Ok(v) => v,
         Err(_e) => {
-            println!("Unable to start listening on '{}', do you have the needed permissions?", ADDRESS);
+            println!("Unable to start listening on '{}', do you have the needed permissions?", &options.address);
             exit(1);
         }
     };
@@ -142,6 +181,6 @@ main() {
             Ok(v) => v,
             Err(_e) => continue,
         };
-        thread::spawn( || handle_client(stream));
+        thread::spawn( || handle_client(stream, options.clone()));
     }
 }

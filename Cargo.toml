@@ -13,3 +13,4 @@ keywords = ["webserver", "web", "http"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+readconfig = "0.2.4"
