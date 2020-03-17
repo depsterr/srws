@@ -6,25 +6,32 @@ I've tried to make the server somewhat safe, however I cannot guarantee it's saf
 
 # Options / Configuration
 
-The following constants are present in [src/main.rs](https://github.com/depsterr/srws/blob/master/src/main.rs).
+To configure the web server you can set these values in /etc/srws.conf
 
-* ADDRESS
+* address
 	* The address that the server will listen on. The default value covers all connections on port 80
 
-* ALLOWSYM
+* allow_sym
 	* Allow opening symlinks? (Note that symlink paths are not blocked by this option.
 
-* DIRECTORY
+* directory
 	* The base directory for the webpage.
 
-* MAXREQUESTSIZE
-	* The max amount of bytes to be able to read as a http request.
-
-* MULTIPLEHOSTS
+* multiple_hosts
 	* If set to true, the server will serve webpages from a subdirectory with the name of the host. For example, if you were to connect to examplewebsite.com then the server would use the folder /var/www/html/examplewebsite.com/ as it's base directory. This is useful if you want to host multiple website on one server.
 
-* NOTFOUNDPAGE
+* not_found_page
 	* The page to show in case of a 404 Not Found error
+
+If not configuration file is found these defaults will be used:
+
+```
+address           0.0.0.0:80
+directory         /var/www/html
+not_found_page    /var/www/404.html
+allow_sym         false
+multiple_hosts    false
+```
 
 # Installation
 
