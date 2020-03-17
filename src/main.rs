@@ -25,11 +25,12 @@ impl Clone for Options {
     }
 }
 
-
+/// The program version
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// The max size for HTTP requests, in bytes
 const MAX_REQUEST_SIZE:usize = 4096;
+
 
 /// This function takes a TcpStream as an argument which it then reads a
 /// HTTP request from to which it will either reply with a 404 or 200
@@ -94,13 +95,23 @@ handle_client (mut stream: TcpStream, options: Arc<RwLock<Options>> ) -> Result<
     let extension = Path::new(&filepath).extension();
 
     if extension == None {
-        send_page(stream, &filepath, "200 OK", "text/html");
+        send_page(stream, &filepath, "200 OK", "text");
         return Ok(())
     }
 
     match extension.unwrap().to_str().unwrap() {
-        "jpg" | "png" => send_page(stream, &filepath, "200 OK", "image"),
-        _ => send_page(stream, &filepath, "200 OK", "text/html"),
+        "html" => send_page(stream, &filepath, "200 OK", "text/html; charset=utf-8"),
+        "jpg" | "jpeg" => send_page(stream, &filepath, "200 OK", "image/jpeg"),
+        "png" => send_page(stream, &filepath, "200 OK", "image/png"),
+        "css" => send_page(stream, &filepath, "200 OK", "text/css"),
+        "js" => send_page(stream, &filepath, "200 OK", "text/javascript"),
+        "json" => send_page(stream, &filepath, "200 OK", "application/json"),
+        "mp3" => send_page(stream, &filepath, "200 OK", "audio/mpeg"),
+        "svg" => send_page(stream, &filepath, "200 OK", "image/svg+xml"),
+        "ico" => send_page(stream, &filepath, "200 OK", "image/vnd.microsoft.icon"),
+        "bmp" => send_page(stream, &filepath, "200 OK", "image/bmp"),
+        "gif" => send_page(stream, &filepath, "200 OK", "audio/gif"),
+        _ => send_page(stream, &filepath, "200 OK", "text/html; charset=utf-8"),
     }
     
 
@@ -116,7 +127,7 @@ send_page (mut stream: TcpStream, filepath: &str, status: &str, contenttype: &st
     let mut fptr = File::open(filepath).unwrap();
     let mut file = Vec::new();
     fptr.read_to_end(&mut file).unwrap();
-    let header = format!("HTTP/1.1 {}\nContent-Type: {} charset=utf-8\nContent-Length: {}\n\n", status, contenttype, file.len());
+    let header = format!("HTTP/1.1 {}\nContent-Type: {}\nX-Content-Type-Options: nosniff\nContent-Length: {}\n\n", status, contenttype, file.len());
     let mut response = Vec::from(header.into_bytes().as_slice());
     response.append(&mut file);
     stream.write(&response).unwrap();
