@@ -61,7 +61,7 @@ handle_client (mut stream: TcpStream, options: Arc<RwLock<Options>> ) -> Result<
         return Err(());
     }
 
-    let mut filepath = String::from(&options.read().unwrap().directory);
+    let mut filepath = options.read().unwrap().directory.clone();
     if options.read().unwrap().multiple_hosts {
         filepath.push('/');
         filepath.push_str(data_splits[4]);
