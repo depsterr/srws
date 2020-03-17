@@ -1,13 +1,15 @@
-use std::net::{TcpListener, TcpStream};
-use readconfig::Configuration;
-use std::io::prelude::*;
-use std::process::exit;
-use std::str::FromStr;
-use std::path::Path;
 use std::fs::File;
-use std::thread;
-use std::str;
 use std::fs;
+use std::io::prelude::*;
+use std::net::{TcpListener, TcpStream};
+use std::path::Path;
+use std::process::exit;
+use std::str;
+use std::str::FromStr;
+use std::sync::{Arc, RwLock};
+use std::thread;
+
+use readconfig::Configuration;
 
 struct Options {
     address: String,
@@ -25,34 +27,15 @@ impl Clone for Options {
 
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-const MAX_REQUEST_SIZE:usize = 4096;
 
-/*
-/// The address that the server will listen on. The default value covers
-/// all connections on port 80
-const ADDRESS:&str = "0.0.0.0:80";
-/// The base directory for the webpage.
-const DIRECTORY:&str = "/var/www/html";
-/// The page to show in case of a 404 Not Found error
-const NOTFOUNDPAGE:&str = "/var/www/404.html";
-/// Allow opening symlinks? (Note that symlink paths are not blocked by
-/// this option.
-const ALLOWSYM:bool = false;
-/// If set to true, the server will serve webpages from a subdirectory
-/// with the name of the host. For example, if you were to connect to
-/// examplewebsite.com then the server would use the folder
-/// /var/www/html/examplewebsite.com/ as it's base directory. This is
-/// useful if you want to host multiple website on one server.
-const MULTIPLEHOSTS:bool = false;
-/// The max amount of bytes to be able to read as a http request.
-const MAXREQUESTSIZE:usize = 4096;
-*/
+/// The max size for HTTP requests, in bytes
+const MAX_REQUEST_SIZE:usize = 4096;
 
 /// This function takes a TcpStream as an argument which it then reads a
 /// HTTP request from to which it will either reply with a 404 or 200
 /// response and a corresponding html page.
 fn
-handle_client (mut stream: TcpStream, options: Options) -> Result<(), ()> {
+handle_client (mut stream: TcpStream, options: Arc<RwLock<Options>> ) -> Result<(), ()> {
     println!("======= Begin Request =======\n");
 
     let mut data = [0; MAX_REQUEST_SIZE];
@@ -77,8 +60,8 @@ handle_client (mut stream: TcpStream, options: Options) -> Result<(), ()> {
         return Err(());
     }
 
-    let mut filepath = String::from(options.directory);
-    if options.multiple_hosts {
+    let mut filepath = String::from(&options.read().unwrap().directory);
+    if options.read().unwrap().multiple_hosts {
         filepath.push('/');
         filepath.push_str(data_splits[4]);
     }
@@ -87,7 +70,7 @@ handle_client (mut stream: TcpStream, options: Options) -> Result<(), ()> {
     let mut metadata = match fs::metadata(filepath.clone()) {
         Ok(v) => v,
         Err(_e) => {
-            send_page(stream, &options.not_found_page, "404 Not Found", "text/html");
+            send_page(stream, &options.read().unwrap().not_found_page, "404 Not Found", "text/html");
             return Ok(())
         },
     };
@@ -97,14 +80,14 @@ handle_client (mut stream: TcpStream, options: Options) -> Result<(), ()> {
         metadata = match fs::metadata(filepath.clone()) {
             Ok(v) => v,
             Err(_e) => {
-                send_page(stream, &options.not_found_page, "404 Not Found", "text/html");
+                send_page(stream, &options.read().unwrap().not_found_page, "404 Not Found", "text/html");
                 return Ok(())
             },
         };
     }
 
-    if metadata.file_type().is_symlink() && !options.allow_sym {
-        send_page(stream, &options.not_found_page, "404 Not Found", "text/html");
+    if metadata.file_type().is_symlink() && !options.read().unwrap().allow_sym {
+        send_page(stream, &options.read().unwrap().not_found_page, "404 Not Found", "text/html");
         return Ok(())
     }
 
@@ -143,10 +126,11 @@ fn
 main() {
     println!("Starting srws version {}", VERSION);
 
+    /* Read options from options file */
     let cfg = Configuration::new(&["/etc/srws.conf"]);
 
-    let options = Options {
-        address: match cfg.get_option("adress") {
+    let options = Arc::new( RwLock::new( Options {
+        address: match cfg.get_option("address") {
             Ok(v) => v,
             Err(_e) => "0.0.0.0:80".to_string(),
         },
@@ -158,20 +142,21 @@ main() {
             Ok(v) => v,
             Err(_e) => "/var/www/404.html".to_string(),
         },
-        allow_sym: match bool::from_str(match cfg.get_option("allow_sym") { Ok(v) => &v, Err(e) => "false"}) {
+        allow_sym: match bool::from_str(&match cfg.get_option("allow_sym") { Ok(v) => v, Err(_e) => "false".to_string()}) {
             Ok(v) => v,
             Err(_e) => false,
         },
-        multiple_hosts: match bool::from_str(match cfg.get_option("multiple_hosts") { Ok(v) => &v, Err(e) => "false"}) {
+        multiple_hosts: match bool::from_str(&match cfg.get_option("multiple_hosts") { Ok(v) => v, Err(_e) => "false".to_string()}) {
             Ok(v) => v,
             Err(_e) => false,
         },
-    };
+    } ) );
+    
 
-    let listener = match TcpListener::bind(&options.address) {
+    let listener = match TcpListener::bind(&options.read().unwrap().address) {
         Ok(v) => v,
         Err(_e) => {
-            println!("Unable to start listening on '{}', do you have the needed permissions?", &options.address);
+            println!("Unable to start listening on '{}', do you have the needed permissions?", &options.read().unwrap().address);
             exit(1);
         }
     };
@@ -181,6 +166,9 @@ main() {
             Ok(v) => v,
             Err(_e) => continue,
         };
-        thread::spawn( || handle_client(stream, options.clone()));
+        let opt = options.clone();
+        thread::spawn( move || {
+            handle_client(stream, opt)
+        });
     }
 }
